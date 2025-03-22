@@ -11,6 +11,7 @@ import (
 
 type StickyRepositoryInterface interface {
 	Save(stickies []*model.Sticky) ([]int, error)
+	GetAll() ([]*model.Sticky, error)
 }
 
 type StickyRepository struct {
@@ -63,4 +64,29 @@ func (r *StickyRepository) Save(stickies []*model.Sticky) ([]int, error) {
 	}
 
 	return savedIDs, nil
+}
+func (r *StickyRepository) GetAll() ([]*model.Sticky, error) {
+	query := `
+		SELECT content, category, created_at
+		FROM sticky
+		ORDER BY created_at DESC
+	`
+
+	rows, err := r.DB.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stickies []*model.Sticky
+	for rows.Next() {
+		var sticky model.Sticky
+		err := rows.Scan(&sticky.Content, &sticky.Category, &sticky.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		stickies = append(stickies, &sticky)
+	}
+
+	return stickies, nil
 }

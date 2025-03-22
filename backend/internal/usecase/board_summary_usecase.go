@@ -11,26 +11,27 @@ import (
 
 type WidgetUsecaseInterface interface {
 	ProcessAndSave(boardID, accessToken string) ([]int, error)
+	GetAllStickies() ([]*model.Sticky, error)
 }
 
 type WidgetUsecase struct {
 	BoardRepo  repository.BoardRepositoryInterface
 	StickyRepo repository.StickyRepositoryInterface
 	MiroAPI    miroapi.MiroAPIInterface
-	Embedder   EmbeddingService // ✅ Embedding 用に追加
+	Embedder   EmbeddingService
 }
 
 func NewWidgetUsecase(
 	boardRepo repository.BoardRepositoryInterface,
 	stickyRepo repository.StickyRepositoryInterface,
 	miro miroapi.MiroAPIInterface,
-	embedder EmbeddingService, // ✅ 追加
+	embedder EmbeddingService, 
 ) WidgetUsecaseInterface {
 	return &WidgetUsecase{
 		BoardRepo:  boardRepo,
 		StickyRepo: stickyRepo,
 		MiroAPI:    miro,
-		Embedder:   embedder, // ✅ 追加
+		Embedder:   embedder, 
 	}
 }
 
@@ -79,7 +80,7 @@ func (u *WidgetUsecase) ProcessAndSave(boardID, accessToken string) ([]int, erro
 			MiroStickyID: widget.ID,
 			Content:      widget.Text,
 			Category:     category,
-			Embedding:    embedding, // ✅ embedding セット
+			Embedding:    embedding, 
 		}
 
 		stickies = append(stickies, sticky)
@@ -92,4 +93,8 @@ func (u *WidgetUsecase) ProcessAndSave(boardID, accessToken string) ([]int, erro
 	}
 
 	return savedIDs, nil
+}
+
+func (u *WidgetUsecase) GetAllStickies() ([]*model.Sticky, error) {
+	return u.StickyRepo.GetAll()
 }

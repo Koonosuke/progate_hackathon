@@ -42,6 +42,10 @@ func main() {
 	e.GET("/update_embedding", ragController.UpdateEmbedding)
 	e.GET("/search", ragController.SearchWithRAG)
 	e.GET("/search_with_advice", ragController.SearchWithAdvice)
+	
+
+
+
 
 	slackUsecase := usecase.NewSlackUsecase(db)
 	controller.NewSlackController(e, slackUsecase)
@@ -62,8 +66,9 @@ func main() {
 	widgetUsecase := usecase.NewWidgetUsecase(boardRepo, stickyRepo, miroClient, embedder)
 	v := validator.NewValidator()
 	widgetController := controller.NewWidgetController(widgetUsecase, v)
-	e.POST("/process-board", widgetController.ProcessBoard)
 
+	e.POST("/process-board", widgetController.ProcessBoard)
+	e.GET("/stickies", widgetController.GetAllStickies)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

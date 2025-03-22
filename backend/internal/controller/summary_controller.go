@@ -10,6 +10,7 @@ import (
 
 type WidgetControllerInterface interface {
 	ProcessBoard(ctx echo.Context) error
+	GetAllStickies(ctx echo.Context) error
 }
 
 type WidgetRequest struct {
@@ -50,3 +51,12 @@ func (c *WidgetController) ProcessBoard(ctx echo.Context) error {
 		"ids": savedIDs,
 	})
 }
+func (c *WidgetController) GetAllStickies(ctx echo.Context) error {
+	stickies, err := c.Usecase.GetAllStickies()
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+	}
+
+	return ctx.JSON(http.StatusOK, stickies)
+}
+
