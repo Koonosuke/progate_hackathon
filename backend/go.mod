@@ -10,6 +10,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/pgvector/pgvector-go v0.3.0
+	github.com/sashabaranov/go-openai v1.38.1
 	golang.org/x/oauth2 v0.28.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12

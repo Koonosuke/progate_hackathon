@@ -9,6 +9,11 @@ services:
     environment:
       - OPENAI_APIKEY=${OPENAI_APIKEY}
       - DATABASE_URL=postgres://progate:progate@postgres:5432/progate
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - MIRO_BOARD_ID=${MIRO_BOARD_ID}
+      - MIRO_ACCESS_TOKEN=${MIRO_ACCESS_TOKEN}
+      - PORT=${PORT}
+
     depends_on:
       - postgres
 

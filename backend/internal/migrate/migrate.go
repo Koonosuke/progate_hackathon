@@ -34,3 +34,19 @@ func createBoardSummariesTable(db *sql.DB) error {
 	_, err := db.Exec(query)
 	return err
 }
+
+func createStickyTable(db *sql.DB) error {
+	query := `
+		CREATE TABLE IF NOT EXISTS sticky (
+			id SERIAL PRIMARY KEY,
+			board_id INT NOT NULL,
+			miro_sticky_id TEXT NOT NULL,
+			content TEXT NOT NULL,
+			category TEXT CHECK (category IN ('改善点', '反省点')) NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (board_id) REFERENCES board(id) ON DELETE CASCADE
+		);
+	`
+	_, err := db.Exec(query)
+	return err
+}

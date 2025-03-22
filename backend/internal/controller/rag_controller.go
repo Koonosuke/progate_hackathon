@@ -34,7 +34,7 @@ func (rc *RAGController) UpdateEmbedding(c echo.Context) error {
 func (rc *RAGController) SearchWithRAG(c echo.Context) error {
 	query := c.QueryParam("query")
 	if query == "" {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "query is required"})
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "queｚry is required"})
 	}
 
 	results, err := rc.Usecase.SearchWithRAG(query)
@@ -43,4 +43,19 @@ func (rc *RAGController) SearchWithRAG(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, results)
+}
+
+// /search_with_advice?query=〜 に対応
+func (rc *RAGController) SearchWithAdvice(c echo.Context) error {
+	query := c.QueryParam("query")
+	if query == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "query is required"})
+	}
+
+	data, err := rc.Usecase.SearchWithRAGAndAdvice(query)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to search or generate advice"})
+	}
+
+	return c.JSON(http.StatusOK, data)
 }

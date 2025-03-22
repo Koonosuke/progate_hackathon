@@ -2,69 +2,94 @@ package usecase
 
 import (
 	"fmt"
-	"time"
+	"strings"
 
-	"github.com/matthewTechCom/progate_hackathon/internal/repository"
-	"github.com/matthewTechCom/progate_hackathon/internal/miroapi"
-	"github.com/matthewTechCom/progate_hackathon/internal/chatgptapi"
 	"github.com/matthewTechCom/progate_hackathon/internal/model"
+	"github.com/matthewTechCom/progate_hackathon/internal/miroapi"
+	"github.com/matthewTechCom/progate_hackathon/internal/repository"
 )
 
-type BoardSummaryUsecaseInterface interface {
+type WidgetUsecaseInterface interface {
 	ProcessAndSave(boardID, accessToken string) ([]int, error)
 }
 
-type BoardSummaryUsecase struct {
-	BoardSummaryRepo repository.BoardSummaryRepositoryInterface
-	MiroAPI          miroapi.MiroAPIInterface
-	ChatGPTAPI       chatgptapi.ChatGPTAPIInterface
+type WidgetUsecase struct {
+	BoardRepo  repository.BoardRepositoryInterface
+	StickyRepo repository.StickyRepositoryInterface
+	MiroAPI    miroapi.MiroAPIInterface
+	Embedder   EmbeddingService // ✅ Embedding 用に追加
 }
 
-func NewBoardSummaryUsecase(repo repository.BoardSummaryRepositoryInterface, miro miroapi.MiroAPIInterface, chatgpt chatgptapi.ChatGPTAPIInterface) BoardSummaryUsecaseInterface {
-	return &BoardSummaryUsecase{
-		BoardSummaryRepo: repo,
-		MiroAPI:          miro,
-		ChatGPTAPI:       chatgpt,
+func NewWidgetUsecase(
+	boardRepo repository.BoardRepositoryInterface,
+	stickyRepo repository.StickyRepositoryInterface,
+	miro miroapi.MiroAPIInterface,
+	embedder EmbeddingService, // ✅ 追加
+) WidgetUsecaseInterface {
+	return &WidgetUsecase{
+		BoardRepo:  boardRepo,
+		StickyRepo: stickyRepo,
+		MiroAPI:    miro,
+		Embedder:   embedder, // ✅ 追加
 	}
 }
 
-// miroapiから情報を取得し、chatgptapiで要約したものをDBに保存する
-func (u *BoardSummaryUsecase) ProcessAndSave(boardID, accessToken string) ([]int, error) {
-	// miroapiから情報を取得
+func (u *WidgetUsecase) ProcessAndSave(boardID, accessToken string) ([]int, error) {
+	// DBに存在するかチェックし、なければ新規保存する
+	board, err := u.BoardRepo.GetByMiroID(boardID)
+	if err != nil {
+		newBoard := &model.Board{
+			MiroBoardID: boardID,
+			Title:       "",
+			Description: "",
+		}
+		boardIDInt, err := u.BoardRepo.Save(newBoard)
+		if err != nil {
+			return nil, fmt.Errorf("boardの保存に失敗: %v", err)
+		}
+		board = &model.Board{ID: boardIDInt, MiroBoardID: boardID}
+	}
+
+	// Miro APIからウィジェット情報を取得
 	widgets, err := u.MiroAPI.GetWidgets(boardID, accessToken)
 	if err != nil {
-		return nil, fmt.Errorf("miro API から情報の取得に失敗: %v", err)
+		return nil, fmt.Errorf("miro APIから情報取得に失敗: %v", err)
 	}
 
-	var savedIDs []int
-
-	// 複数のウィジェットを処理
+	var stickies []*model.Sticky
 	for _, widget := range widgets {
-		// chatgptで要約
-		summary, err := u.ChatGPTAPI.SummarizeText(widget.Text)
+		var category string
+		if strings.Contains(widget.Text, "改善") {
+			category = "改善点"
+		} else if strings.Contains(widget.Text, "反省") {
+			category = "反省点"
+		} else {
+			continue
+		}
+
+		// ✅ embedding 生成
+		embedding, err := u.Embedder.GetEmbedding(widget.Text)
 		if err != nil {
-			return nil, fmt.Errorf("ChatGPT API による要約に失敗: %v", err)
+			fmt.Printf("embedding取得失敗（スキップ）: %v\n", err)
+			continue
 		}
 
-		// ウィジェットIDと要約内容をログ出力してデバッグ
-		fmt.Printf("ウィジェットID: %s の要約: %s\n", widget.ID, summary)
-
-		// modelのインスタンスを作成
-		boardSummary := &model.BoardSummary{
-			Summary:   summary,
-			CreatedAt: time.Now(),
+		sticky := &model.Sticky{
+			BoardID:      board.ID,
+			MiroStickyID: widget.ID,
+			Content:      widget.Text,
+			Category:     category,
+			Embedding:    embedding, // ✅ embedding セット
 		}
 
-		// リポジトリを通じてDBへ保存する
-		savedID, err := u.BoardSummaryRepo.Save(boardSummary)
-		if err != nil {
-			return nil, fmt.Errorf("要約の保存に失敗: %v", err)
-		}
-
-		// 保存したIDを保存
-		savedIDs = append(savedIDs, savedID)
+		stickies = append(stickies, sticky)
 	}
 
-	// 保存されたIDのスライスを返す
+	// DB保存
+	savedIDs, err := u.StickyRepo.Save(stickies)
+	if err != nil {
+		return nil, fmt.Errorf("stickyの保存に失敗: %v", err)
+	}
+
 	return savedIDs, nil
 }
