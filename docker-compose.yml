@@ -1,0 +1,39 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+    environment:
+      - OPENAI_APIKEY=${OPENAI_APIKEY}
+      - DATABASE_URL=postgres://progate:progate@postgres:5432/progate
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3000:3000"
+    # volumes:
+    #   - ./frontend:/app
+    depends_on:
+      - backend
+
+  postgres:
+    build:
+      context: ./postgres
+    container_name: progate_hackathon
+    environment:
+      POSTGRES_USER: progate
+      POSTGRES_PASSWORD: progate
+      POSTGRES_DB: progate
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
