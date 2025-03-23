@@ -44,9 +44,6 @@ func main() {
 	e.GET("/search_with_advice", ragController.SearchWithAdvice)
 	
 
-
-
-
 	slackUsecase := usecase.NewSlackUsecase(db)
 	controller.NewSlackController(e, slackUsecase)
 	e.POST("/slack/weekly-summary", func(c echo.Context) error {

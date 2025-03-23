@@ -22,8 +22,11 @@ services:
       context: ./frontend
     ports:
       - "3000:3000"
-    # volumes:
-    #   - ./frontend:/app
+    environment:
+      - NEXT_PUBLIC_COGNITO_REGION=${NEXT_PUBLIC_COGNITO_REGION}
+      - NEXT_PUBLIC_COGNITO_USER_POOL_ID=${NEXT_PUBLIC_COGNITO_USER_POOL_ID}
+      - NEXT_PUBLIC_COGNITO_CLIENT_ID=${NEXT_PUBLIC_COGNITO_CLIENT_ID}
+      - NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID=${NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID}
     depends_on:
       - backend
 
